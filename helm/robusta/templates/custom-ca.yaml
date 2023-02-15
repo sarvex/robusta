@@ -1,0 +1,11 @@
+{{- if .Values.runner.certificate }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: robusta-custom-ca-secret
+  namespace: {{ .Release.Namespace }}
+type: Opaque
+data:
+  custom-ca.crt: |-
+    {{ .Values.runner.certificate }}
+{{- end }}

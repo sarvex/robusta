@@ -1,5 +1,4 @@
 from robusta.core.model.env_vars import (
-    ADDITIONAL_CERTIFICATE,
     ENABLE_TELEMETRY,
     ROBUSTA_TELEMETRY_ENDPOINT,
     SEND_ADDITIONAL_TELEMETRY,
@@ -10,16 +9,12 @@ from robusta.model.config import Registry
 from robusta.patch.patch import create_monkey_patches
 from robusta.runner.config_loader import ConfigLoader
 from robusta.runner.log_init import init_logging, logging
-from robusta.runner.ssl_utils import add_custom_certificate
 from robusta.runner.telemetry_service import TelemetryLevel, TelemetryService
 from robusta.runner.web import Web
 
 
 def main():
     init_logging()
-    if add_custom_certificate(ADDITIONAL_CERTIFICATE):
-        logging.info("added custom certificate")
-
     create_monkey_patches()
     registry = Registry()
     event_handler = PlaybooksEventHandlerImpl(registry)

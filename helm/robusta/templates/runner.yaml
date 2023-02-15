@@ -53,15 +53,23 @@ spec:
           {{- end }}
           - name: RUNNER_VERSION
             value: {{ .Chart.AppVersion }}
-          - name: CERTIFICATE
-            value: {{ .Values.runner.certificate }}    
+          {{- if .Values.runner.certificate }}
+          - name: CURL_CA_BUNDLE
+            value: "/etc/robusta/ssl/custom-ca.crt"
+          - name: REQUESTS_CA_BUNDLE
+            value: "/etc/robusta/ssl/custom-ca.crt"
+          - name: SSL_CERT_FILE
+            value: "/etc/robusta/ssl/custom-ca.crt"
+          - name: WEBSOCKET_CLIENT_CA_BUNDLE
+            value: "/etc/robusta/ssl/custom-ca.crt"
+          {{- end }}
           {{- if kindIs "string" .Values.runner.additional_env_vars }}
           {{- fail "The `additional_env_vars` string value is deprecated. Change the `additional_env_vars` value to an array" -}}
           {{- end }}
           {{- if .Values.runner.additional_env_vars }}
           {{ toYaml .Values.runner.additional_env_vars | nindent 10 }}
           {{- end }}
-        envFrom: 
+        envFrom:
         - secretRef:
             name: robusta-runner-secret
             optional: true
@@ -76,6 +84,10 @@ spec:
           {{- if .Values.playbooksPersistentVolume }}
           - name: persistent-playbooks-storage
             mountPath: /etc/robusta/playbooks/storage
+          {{- end }}
+          {{- if .Values.runner.certificate }}
+          - name: custom-ca-secret
+            mountPath: "/etc/robusta/ssl"
           {{- end }}
         lifecycle:
           preStop:
@@ -120,6 +132,10 @@ spec:
           persistentVolumeClaim:
             claimName: persistent-playbooks-pv-claim
         {{- end }}
+        - name: custom-ca-secret
+          secret:
+            secretName: robusta-custom-ca-secret
+            optional: true
       {{- if .Values.runner.nodeSelector }}
       nodeSelector: {{ toYaml .Values.runner.nodeSelector | nindent 8 }}
       {{- end }}
