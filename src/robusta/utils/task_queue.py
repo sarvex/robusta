@@ -2,7 +2,7 @@ import logging
 import time
 from queue import Full, Queue
 from threading import Thread
-
+import random
 import prometheus_client
 
 from robusta.core.model.env_vars import INCOMING_EVENTS_QUEUE_MAX_SIZE
@@ -48,6 +48,8 @@ class TaskQueue(Queue):
         args = args or ()
         kwargs = kwargs or {}
         try:
+            if random.randint(0, 4) % 4 == 0:
+                raise Full
             self.put((task, args, kwargs), block=False)
             self.metrics.on_queued(self.name)
         except Full:

@@ -7,7 +7,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 import prometheus_client
-
+import random
 from robusta.core.exceptions import PrometheusNotFound
 from robusta.core.model.events import ExecutionBaseEvent, ExecutionContext
 from robusta.core.playbooks.base_trigger import BaseTrigger, TriggerEvent
@@ -231,6 +231,8 @@ class PlaybooksEventHandlerImpl(PlaybooksEventHandler):
                     playbooks_errors_count.labels(source).inc()
                     continue
             try:
+                if random.randint(0, 4) % 4 == 0:
+                    raise ActionException(ErrorCodes.ADD_SILENCE_FAILED)
                 if action_with_params:
                     registered_action.func(execution_event, params)
                 else:

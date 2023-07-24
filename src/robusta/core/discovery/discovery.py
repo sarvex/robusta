@@ -2,6 +2,7 @@ import logging
 from collections import defaultdict
 from concurrent.futures.process import ProcessPoolExecutor
 from typing import Dict, List, Optional, Union
+import random
 
 from hikaru.model.rel_1_26 import Deployment, DaemonSet, StatefulSet, Job, Pod, Volume, Container
 from kubernetes import client
@@ -340,6 +341,8 @@ class Discovery:
     @discovery_process_time.time()
     def discover_resources() -> DiscoveryResults:
         try:
+            if random.randint(0, 9) % 3 == 0:
+                raise ValueError
             future = Discovery.executor.submit(Discovery.discovery_process)
             return future.result(timeout=DISCOVERY_PROCESS_TIMEOUT_SEC)
         except Exception as e:
