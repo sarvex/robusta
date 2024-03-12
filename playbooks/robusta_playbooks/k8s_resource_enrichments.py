@@ -1,5 +1,6 @@
 import json
 import logging
+from dataclasses import asdict
 from typing import Any, List, Optional
 
 import hikaru
@@ -74,7 +75,17 @@ class RelatedPod(BaseModel):
     statusReason: Optional[str] = None
 
 
-supported_resources = ["Deployment", "DaemonSet", "ReplicaSet", "Pod", "StatefulSet", "Job", "Node", "DeploymentConfig"]
+supported_resources = [
+    "Deployment",
+    "DaemonSet",
+    "ReplicaSet",
+    "Pod",
+    "StatefulSet",
+    "Job",
+    "Node",
+    "DeploymentConfig",
+    "Rollout",
+]
 
 
 def to_pod_row(pod: Pod, cluster_name: str) -> List:
@@ -246,7 +257,7 @@ def get_resource_yaml(event: KubernetesResourceEvent):
         if isinstance(loaded_resource, hikaru.HikaruBase):
             resource_yaml = hikaru.get_yaml(loaded_resource)
         else:
-            resource_yaml = yaml.safe_dump((loaded_resource.as_dict()), indent=2)
+            resource_yaml = yaml.safe_dump(loaded_resource.as_dict())
 
         event.add_enrichment(
             [
