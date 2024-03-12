@@ -2,14 +2,14 @@ import logging
 import re
 import time
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import hikaru
 import yaml
 from hikaru.model.rel_1_26 import *  # * import is necessary for hikaru subclasses to work
 from kubernetes import client
 from kubernetes.client import ApiException
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
 
 from robusta.core.model.env_vars import IMAGE_REGISTRY, INSTALLATION_NAMESPACE, RELEASE_NAME
 from robusta.integrations.kubernetes.api_client_utils import (
@@ -533,6 +533,87 @@ class RobustaJob(Job):
             restartPolicy="Never",
         )
         return cls.run_simple_job_spec(spec, name=image, timeout=timeout)
+
+
+class RolloutStatus(BaseModel):
+    readyReplicas: Optional[int] = 0
+    selector: str
+
+
+class RolloutSpec(BaseModel):
+    replicas: int = 1
+    analysis: Optional[Dict] = None
+    selector: Optional[LabelSelector] = None
+    workloadRef: Optional[Dict] = None
+
+    template: Optional[PodTemplateSpec] = None
+    minReadySeconds: int = 0
+    revisionHistoryLimit: int = 10
+    paused: Optional[bool] = False
+    progressDeadlineSeconds: int = 600
+    progressDeadlineAbort: Optional[bool] = False
+    restartAt: Optional[str] = None
+    rollbackWindow: Optional[dict] = None
+    strategy: Optional[Dict] = None
+
+
+# https://github.com/argoproj/argo-rollouts/blob/master/manifests/crds/rollout-crd.yaml
+class Rollout(BaseModel):
+    plural: ClassVar[str] = "rollouts"
+    group: ClassVar[str] = "argoproj.io"
+    version: ClassVar[str] = "v1alpha1"
+
+    metadata: ObjectMeta
+    spec: Optional[RolloutSpec] = None
+    status: Optional[RolloutStatus] = None
+    apiVersion: str = f"{group}/{version}"
+    kind: str = "Rollout"
+
+    # fill selector when using Rollout with a deployment reference and there is no spec.
+    @root_validator()
+    def fill_selector(cls, v):
+        spec, status = v.get("spec"), v.get("status")
+        if not spec.selector:
+            selector: str = status.selector
+            if selector:
+                matchLabels = {}
+                for label in selector.split(","):
+                    parts = label.partition("=")
+                    matchLabels[parts[0]] = parts[2]
+
+                spec.selector = LabelSelector([], matchLabels)
+
+        return v
+
+    def as_dict(self):
+        d = self.dict(exclude_none=True, exclude={"metadata", "spec"})
+        if self.metadata:
+            d["metadata"] = self.metadata.to_dict()
+        if self.spec:
+            s = self.spec.dict(exclude_none=True, exclude={"template", "selector"})
+            if self.spec.template:
+                s["template"] = self.spec.template.to_dict()
+            d["spec"] = s
+
+            d["selector"] = self.spec.selector.to_dict()
+        return d
+
+    def update(self):
+        client.CustomObjectsApi().patch_namespaced_custom_object(
+            Rollout.group, Rollout.version, self.metadata.namespace, Rollout.plural, self.metadata.name, self.as_dict()
+        )
+
+    @classmethod
+    def readNamespaced(self, name: str, namespace: str):
+        res = client.CustomObjectsApi().get_namespaced_custom_object(
+            group=Rollout.group,
+            version=Rollout.version,
+            namespace=namespace,
+            plural=Rollout.plural,
+            name=name,
+        )
+
+        return type("", (object,), {"obj": Rollout(**res)})()
 
 
 class DeploymentConfigStatus(BaseModel):
