@@ -31,6 +31,7 @@ from pydantic import BaseModel
 from robusta.core.discovery import utils
 from robusta.core.model.cluster_status import ClusterStats
 from robusta.core.model.env_vars import (
+    ARGO_ROLLOUTS,
     DISABLE_HELM_MONITORING,
     DISCOVERY_BATCH_SIZE,
     DISCOVERY_MAX_BATCHES,
@@ -42,7 +43,7 @@ from robusta.core.model.helm_release import HelmRelease
 from robusta.core.model.jobs import JobInfo
 from robusta.core.model.namespaces import NamespaceInfo
 from robusta.core.model.services import ContainerInfo, ServiceConfig, ServiceInfo, VolumeInfo
-from robusta.integrations.kubernetes.custom_models import DeploymentConfig
+from robusta.integrations.kubernetes.custom_models import DeploymentConfig, Rollout
 from robusta.patch.patch import create_monkey_patches
 from robusta.utils.cluster_provider_discovery import cluster_provider
 from robusta.utils.stack_tracer import StackTracer
@@ -177,6 +178,39 @@ class Discovery:
                         ]
                     )
                     continue_ref = deployconfigsRes["metadata"].get("continue")
+                    if not continue_ref:
+                        break
+
+            if ARGO_ROLLOUTS:
+                continue_ref = None
+                for _ in range(DISCOVERY_MAX_BATCHES):
+                    rolloutsRes = client.CustomObjectsApi().list_cluster_custom_object(
+                        group=Rollout.group,
+                        version=Rollout.version,
+                        plural=Rollout.plural,
+                        limit=DISCOVERY_BATCH_SIZE,
+                        _continue=continue_ref,
+                    )
+
+                    roList = [Rollout(**ro) for ro in rolloutsRes["items"]]
+
+                    active_services.extend(
+                        [
+                            Discovery.__create_service_info(
+                                ro.metadata,
+                                "Rollout",
+                                ro.spec.template.spec.containers if ro.spec.template else [],
+                                ro.spec.template.spec.volumes if ro.spec.template else [],
+                                extract_total_pods(ro),
+                                extract_ready_pods(ro),
+                                is_helm_release=is_release_managed_by_helm(
+                                    annotations=ro.metadata.annotations, labels=ro.metadata.labels
+                                ),
+                            )
+                            for ro in roList
+                        ]
+                    )
+                    continue_ref = rolloutsRes["metadata"].get("continue")
                     if not continue_ref:
                         break
 
@@ -539,6 +573,7 @@ def extract_containers(resource) -> List[V1Container]:
             or isinstance(resource, V1StatefulSet)
             or isinstance(resource, V1Job)
             or isinstance(resource, DeploymentConfig)
+            or isinstance(resource, Rollout)
         ):
             containers = resource.spec.template.spec.containers
         elif isinstance(resource, V1Pod):
@@ -617,7 +652,12 @@ def is_pod_finished(pod) -> bool:
 
 def extract_ready_pods(resource) -> int:
     try:
-        if isinstance(resource, Deployment) or isinstance(resource, StatefulSet) or isinstance(resource, DeploymentConfig):
+        if (
+            isinstance(resource, Deployment)
+            or isinstance(resource, StatefulSet)
+            or isinstance(resource, DeploymentConfig)
+            or isinstance(resource, Rollout)
+        ):
             return 0 if not resource.status.readyReplicas else resource.status.readyReplicas
         elif isinstance(resource, DaemonSet):
             return 0 if not resource.status.numberReady else resource.status.numberReady
@@ -638,7 +678,12 @@ def extract_ready_pods(resource) -> int:
 
 def extract_total_pods(resource) -> int:
     try:
-        if isinstance(resource, Deployment) or isinstance(resource, StatefulSet) or isinstance(resource, DeploymentConfig):
+        if (
+            isinstance(resource, Deployment)
+            or isinstance(resource, StatefulSet)
+            or isinstance(resource, DeploymentConfig)
+            or isinstance(resource, Rollout)
+        ):
             # resource.spec.replicas can be 0, default value is 1
             return resource.spec.replicas if resource.spec.replicas is not None else 1
         elif isinstance(resource, DaemonSet):
@@ -692,6 +737,7 @@ def extract_volumes(resource) -> List[V1Volume]:
             or isinstance(resource, V1StatefulSet)
             or isinstance(resource, V1Job)
             or isinstance(resource, DeploymentConfig)
+            or isinstance(resource, Rollout)
         ):
             volumes = resource.spec.template.spec.volumes
         elif isinstance(resource, V1Pod):
