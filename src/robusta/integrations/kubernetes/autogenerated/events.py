@@ -33,9 +33,7 @@ from hikaru.model.rel_1_26.v1 import ConfigMap as v1ConfigMap
 from hikaru.model.rel_1_26.v1 import DaemonSet as v1DaemonSet
 from hikaru.model.rel_1_26.v1 import Deployment as v1Deployment
 from hikaru.model.rel_1_26.v1 import Event as v1Event
-from hikaru.model.rel_1_26.v1 import (
-    HorizontalPodAutoscaler as v1HorizontalPodAutoscaler,
-)
+from hikaru.model.rel_1_26.v1 import HorizontalPodAutoscaler as v1HorizontalPodAutoscaler
 from hikaru.model.rel_1_26.v1 import Ingress as v1Ingress
 from hikaru.model.rel_1_26.v1 import Job as v1Job
 from hikaru.model.rel_1_26.v1 import Namespace as v1Namespace
@@ -51,19 +49,18 @@ from hikaru.model.rel_1_26.v1 import StatefulSet as v1StatefulSet
 from hikaru.utils import Response
 from pydantic import BaseModel
 
+from robusta.core.model.events import ExecutionBaseEvent, ExecutionEventBaseParams
+from robusta.core.reporting.base import FindingSubject
+from robusta.core.reporting.consts import FindingSource, FindingSubjectType
+from robusta.core.reporting.finding_subjects import KubeObjFindingSubject
+from robusta.integrations.kubernetes.base_event import K8sBaseChangeEvent
 from robusta.integrations.kubernetes.custom_models import (
+    DeploymentConfig,
     RobustaDeployment,
     RobustaJob,
     RobustaPod,
-    DeploymentConfig,
-    Rollout
+    Rollout,
 )
-
-from ....core.model.events import ExecutionBaseEvent, ExecutionEventBaseParams
-from ....core.reporting.base import FindingSubject
-from ....core.reporting.consts import FindingSource, FindingSubjectType
-from ....core.reporting.finding_subjects import KubeObjFindingSubject
-from ..base_event import K8sBaseChangeEvent
 
 LOADERS_MAPPINGS = {
     "pod": (True, RobustaPod.readNamespacedPod),
@@ -86,7 +83,7 @@ LOADERS_MAPPINGS = {
     "configmap": (True, ConfigMap.readNamespacedConfigMap),
     "ingress": (True, Ingress.readNamespacedIngress),
     "deploymentconfig": (True, DeploymentConfig.readNamespaced),
-    "rollout": (True, Rollout.readNamespaced)
+    "rollout": (True, Rollout.readNamespaced),
 }
 
 
@@ -133,7 +130,7 @@ class KubernetesResourceEvent(ExecutionBaseEvent):
             ConfigMap,
             Ingress,
             DeploymentConfig,
-            Rollout
+            Rollout,
         ]
     ] = None
 
@@ -160,7 +157,7 @@ class KubernetesResourceEvent(ExecutionBaseEvent):
             ConfigMap,
             Ingress,
             DeploymentConfig,
-            Rollout
+            Rollout,
         ],
         named_sinks: List[str],
     ):
@@ -191,7 +188,7 @@ class KubernetesResourceEvent(ExecutionBaseEvent):
             ConfigMap,
             Ingress,
             DeploymentConfig,
-            Rollout
+            Rollout,
         ]
     ]:
         return self.obj
