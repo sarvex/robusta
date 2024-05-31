@@ -2953,13 +2953,13 @@ type-comments = ["typed-ast (>=1.5.2)"]
 
 [[package]]
 name = "sphinx-copybutton"
-version = "0.4.0"
+version = "0.5.2"
 description = "Add a copy button to each of your code cells."
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 files = [
-    {file = "sphinx-copybutton-0.4.0.tar.gz", hash = "sha256:8daed13a87afd5013c3a9af3575cc4d5bec052075ccd3db243f895c07a689386"},
-    {file = "sphinx_copybutton-0.4.0-py3-none-any.whl", hash = "sha256:4340d33c169dac6dd82dce2c83333412aa786a42dd01a81a8decac3b130dc8b0"},
+    {file = "sphinx-copybutton-0.5.2.tar.gz", hash = "sha256:4cf17c82fb9646d1bc9ca92ac280813a3b605d8c421225fd9913154103ee1fbd"},
+    {file = "sphinx_copybutton-0.5.2-py3-none-any.whl", hash = "sha256:fb543fd386d917746c9a2c50360c7905b605726b9355cd26e9974857afeae06e"},
 ]
 
 [package.dependencies]
@@ -2967,7 +2967,7 @@ sphinx = ">=1.8"
 
 [package.extras]
 code-style = ["pre-commit (==2.12.1)"]
-rtd = ["ipython", "sphinx", "sphinx-book-theme"]
+rtd = ["ipython", "myst-nb", "sphinx", "sphinx-book-theme", "sphinx-examples"]
 
 [[package]]
 name = "sphinx-design"
@@ -3433,20 +3433,6 @@ files = [
 types-urllib3 = "*"
 
 [[package]]
-name = "types-requests"
-version = "2.31.0.10"
-description = "Typing stubs for requests"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "types-requests-2.31.0.10.tar.gz", hash = "sha256:dc5852a76f1eaf60eafa81a2e50aefa3d1f015c34cf0cba130930866b1b22a92"},
-    {file = "types_requests-2.31.0.10-py3-none-any.whl", hash = "sha256:b32b9a86beffa876c0c3ac99a4cd3b8b51e973fb8e3bd4e0a6bb32c7efad80fc"},
-]
-
-[package.dependencies]
-urllib3 = ">=2"
-
-[[package]]
 name = "types-tabulate"
 version = "0.8.11"
 description = "Typing stubs for tabulate"
@@ -3794,4 +3780,4 @@ all = ["CairoSVG", "Flask", "better-exceptions", "datadog-api-client", "dulwich"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8, <3.11"
-content-hash = "dafa3409d9013e2ad6dcddb7138e045fb0e2e873c5be8f35757b53aa511ff06a"
+content-hash = "07f0cf98efe0934e66524af18259e8d79e592a3b170bc2d10224eb4f25f4be37"
